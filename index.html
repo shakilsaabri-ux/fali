@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mumbai-Gujarat Buffalo Management</title>
+    <style>
+        :root {
+            --bg-color: #f1f5f9;
+            --card-color: #ffffff;
+            --text-dark: #1e293b;
+            --primary: #0f172a;
+            --warning-orange: #f97316;
+            --alert-yellow: #eab308;
+            --danger-red: #ef4444;
+            --success-green: #22c55e;
+            --gray-text: #64748b;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); color: var(--text-dark); margin: 0; padding: 12px; }
+        h1, h2 { text-align: center; margin: 5px 0; color: var(--primary); }
+        h2 { font-size: 16px; font-weight: 500; color: var(--gray-text); }
+        
+        /* Dashboard Styling */
+        .dashboard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 15px 0; }
+        .stat-card { background: var(--card-color); padding: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); border-left: 5px solid var(--gray-text); }
+        .stat-card.total { border-left-color: var(--primary); }
+        .stat-card.khali { border-left-color: var(--danger-red); }
+        .stat-card.sheda { border-left-color: #3b82f6; }
+        .stat-card.shedb { border-left-color: #a855f7; }
+        .stat-card h3 { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-text); }
+        .stat-card p { margin: 4px 0 0 0; font-size: 20px; font-weight: 700; }
+        .capacity-alert { font-size: 10px; color: var(--danger-red); display: block; margin-top: 2px; }
+
+        /* Monthly breakdown report area */
+        .report-section { background: var(--card-color); padding: 12px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+        .monthly-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; text-align: center; }
+        .month-box { background: #f8fafc; padding: 6px; border-radius: 6px; font-size: 11px; border: 1px solid #e2e8f0; }
+        .month-box .count { font-size: 14px; font-weight: bold; color: var(--primary); }
+
+        /* Form UI */
+        form { background: var(--card-color); padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); margin-bottom: 15px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 8px; }
+        .form-group.full-width { grid-column: span 2; }
+        .form-group label { font-size: 11px; font-weight: 600; margin-bottom: 3px; color: var(--gray-text); }
+        .form-group input, .form-group select { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; -webkit-appearance: none; }
+        button { background-color: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-size: 15px; font-weight: bold; margin-top: 5px; cursor: pointer; }
+        
+        /* Table UI */
+        .table-container { overflow-x: auto; background: var(--card-color); border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
+        th, td { padding: 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+        th { background-color: #f8fafc; color: var(--primary); font-weight: 600; }
+        
+        /* Conditional Formatting Rows */
+        .not-serviced-100 { background-color: #ffedd5 !important; color: #c2410c; font-weight: 600; } 
+        .test-due-60 { background-color: #fef9c3 !important; color: #a16207; font-weight: 600; } 
+        .gestation-7 { background-color: #fee2e2 !important; color: #b91c1c; font-weight: 600; }
+        .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .badge-active { background: #dcfce7; color: #15803d; }
+        .badge-inactive { background: #f1f5f9; color: #64748b; }
+    </style>
+</head>
+<body>
+
+    <h1>🐃 Mumbai Dairy Farm</h1>
+    <h2>Herd Management Dashboard</h2>
+
+    <!-- Dashboard Numbers -->
+    <div class="dashboard">
+        <div class="stat-card total">
+            <h3>Total Active Herd</h3>
+            <p id="total-count">0</p>
+        </div>
+        <div class="stat-card khali">
+            <h3>Total KHALI</h3>
+            <p id="khali-count">0</p>
+        </div>
+        <div class="stat-card sheda">
+            <h3>Shed A (Cap: 98)</h3>
+            <p id="shed-a-count">0</p>
+            <span id="alert-a" class="capacity-alert"></span>
+        </div>
+        <div class="stat-card shedb">
+            <h3>Shed B (Cap: 98)</h3>
+            <p id="shed-b-count">0</p>
+            <span id="alert-b" class="capacity-alert"></span>
+        </div>
+        <div class="stat-card">
+            <h3>Yard (Cap: 25)</h3>
+            <p id="yard-count">0</p>
+        </div>
+        <div class="stat-card">
+            <h3>Gujarat Rearing</h3>
+            <p id="gujarat-count">0</p>
+        </div>
+    </div>
+
+    <!-- Monthly Breeding Summary Report -->
+    <div class="report-section">
+        <h3>📊 Monthly Fali Summary (This Year)</h3>
+        <div class="monthly-grid" id="monthly-report">
+            <!-- JavaScript will auto-generate month boxes here -->
+        </div>
+    </div>
+
+    <!-- Data Entry Form -->
+    <form id="farm-form">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Buffalo Tag Number</label>
+                <input type="text" id="tag" required placeholder="e.g. 1024">
+            </div>
+            <div class="form-group">
+                <label>Current Location</label>
+                <select id="location" required>
+                    <option value="Shed A">Shed A (Mumbai)</option>
+                    <option value="Shed B">Shed B (Mumbai)</option>
+                    <option value="Yard">Yard (Mumbai)</option>
+                    <option value="Gujarat">Gujarat (Dry Period)</option>
+                    <option value="Slaughter">Sold to Slaughter</option>
+                    <option value="Died">Died</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Khila Number</label>
+                <input type="number" id="khila" min="1" max="98" placeholder="1-98">
+            </div>
+            <div class="form-group">
+                <label>Incoming Date (From Gujarat/New)</label>
+                <input type="date" id="in-date" required>
+            </div>
+            <div class="form-group">
+                <label>Fali Date (Breeding)</label>
+                <input type="date" id="fali-date">
+            </div>
+            <div class="form-group">
+                <label>Bull Name/Number</label>
+                <input type="text" id="bull" placeholder="e.g. King-05">
+            </div>
+            <div class="form-group full-width">
+                <label>Pregnancy / Breeding Status</label>
+                <select id="status">
+                    <option value="">Pending / Not Tested</option>
+                    <option value="P">P (Pregnant)</option>
+                    <option value="KHALI">KHALI (Empty)</option>
+                    <option value="Abortion">Abortion / Pre-Delivery Case</option>
+                </select>
+            </div>
+        </div>
+        <button type="submit">Log Animal / Update Records</button>
+    </form>
+
+    <!-- Fali Book Live Data Table -->
+    <div class="table-container">
+        <table id="farm-table">
+            <thead>
+                <tr>
+                    <th>S.No</th>
+                    <th>Tag</th>
+                    <th>Location (Khila)</th>
+                    <th>Incoming Date</th>
+                    <th>Fali Date</th>
+                    <th>Bull</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <!-- Auto Loaded Data -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let farmData = JSON.parse(localStorage.getItem('mumbaiFarmData')) || [];
+
+        document.getElementById('farm-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const tagValue = document.getElementById('tag').value.trim();
+            const locValue = document.getElementById('location').value;
+            const statusInput = document.getElementById('status').value;
+
+            // Handle repeats and record overriding
+            // If the animal exists, old instances get flagged as R (Return) if a new fali occurs
+            farmData.forEach(row => {
+                if (row.tag === tagValue && row.isActive) {
+                    if(document.getElementById('fali-date').value) {
+                        row.status = "R";
+                    }
+                    row.isActive = false; // Close out the previous active state row
+                }
+            });
+
+            // Determine check flags for tracking system exit loops
+            const isDeadOrSlaughter = (locValue === "Slaughter" || locValue === "Died");
+
+            const newEntry = {
+                tag: tagValue,
+                location: locValue,
+                khila: document.getElementById('khila').value || '—',
+                inDate: document.getElementById('in-date').value,
+                faliDate: document.getElementById('fali-date').value,
+                bull: document.getElementById('bull').value.trim() || '—',
+                status: statusInput,
+                isActive: !isDeadOrSlaughter
+            };
+
+            farmData.push(newEntry);
+            localStorage.setItem('mumbaiFarmData', JSON.stringify(farmData));
+            
+            this.reset();
+            // Default incoming date to today's prompt format layout for convenience
+            document.getElementById('in-date').valueAsDate = new Date();
+            renderFarm();
+        });
+
+        function renderFarm() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            
+            let khaliCount = 0, countA = 0, countB = 0, countYard = 0, countGuj = 0, totalActive = 0;
+            let faliMonthlyCounts = Array(12).fill(0);
+            const today = new Date();
+            const currentYear = today.getFullYear();
+
+            // First Pass: Process metrics and counts
+            farmData.forEach((row) => {
+                if (!row.isActive) return;
+
+                totalActive++;
+                if (row.status === "KHALI") khaliCount++;
+                if (row.location === "Shed A") countA++;
+                if (row.location === "Shed B") countB++;
+                if (row.location === "Yard") countYard++;
+                if (row.location === "Gujarat") countGuj++;
+
+                // Track monthly breeding numbers across the calendar year
+                if (row.faliDate) {
+                    const fDate = new Date(row.faliDate);
+                    if (fDate.getFullYear() === currentYear) {
+                        faliMonthlyCounts[fDate.getMonth()]++;
+                    }
+                }
+            });
+
+            // Second Pass: Build view display table
+            let displayIndex = 1;
+            farmData.slice().reverse().forEach((row) => {
+                const tr = document.createElement('tr');
+                
+                const inDateObj = new Date(row.inDate);
+                const faliDateObj = row.faliDate ? new Date(row.faliDate) : null;
+                
+                const diffDaysIn = Math.ceil(Math.abs(today - inDateObj) / (1000 * 60 * 60 * 24));
+                let diffDaysFali = faliDateObj ? Math.ceil(Math.abs(today - faliDateObj) / (1000 * 60 * 60 * 24)) : 0;
+
+                // Alerts Conditional Logic Applied
+                if (row.isActive) {
+                    // 1. Buffalo standing in shed over 7 months (210 Days) while pregnant
+                    if (row.status === "P" && diffDaysIn > 210) {
+                        tr.classList.add('gestation-7');
+                    }
+                    // 2. Doctor check due: Bred for 60+ days without a confirmed P or KHALI verdict
+                    else if (row.faliDate && diffDaysFali >= 60 && row.status === "") {
+                        tr.classList.add('test-due-60');
+                    }
+                    // 3. Open flag: Animal in production over 100 days without active service (Fali)
+                    else if (!row.faliDate && diffDaysIn > 100 && row.location !== "Gujarat") {
+                        tr.classList.add('not-serviced-100');
+                    }
+                }
+
+                const statusLabel = row.status ? row.status : (row.isActive ? "Pending" : "Archived");
+                const badgeClass = row.isActive ? "badge-active" : "badge-inactive";
+                const locationDisplay = row.isActive ? `${row.location} (#${row.khila})` : `<span class="status-badge badge-inactive">${row.location}</span>`;
+
+                tr.innerHTML = `
+                    <td>${displayIndex++}</td>
+                    <td><strong>${row.tag}</strong></td>
+                    <td>${locationDisplay}</td>
+                    <td>${row.inDate}</td>
+                    <td>${row.faliDate || '—'}</td>
+                    <td>${row.bull}</td>
+                    <td><span class="status-badge ${badgeClass}">${statusLabel}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Update top text metrics
+            document.getElementById('total-count').innerText = totalActive;
+            document.getElementById('khali-count').innerText = khaliCount;
+            document.getElementById('shed-a-count').innerText = countA;
+            document.getElementById('shed-b-count').innerText = countB;
+            document.getElementById('yard-count').innerText = countYard;
+            document.getElementById('gujarat-count').innerText = countGuj;
+
+            // Strict Khila capacity alert flags
+            document.getElementById('alert-a').innerText = countA > 98 ? "⚠️ OVER CAPACITY!" : "";
+            document.getElementById('alert-b').innerText = countB > 98 ? "⚠️ OVER CAPACITY!" : "";
+
+            // Render monthly analytical widget boxes
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const reportGrid = document.getElementById('monthly-report');
+            reportGrid.innerHTML = '';
+            monthNames.forEach((month, idx) => {
+                const box = document.createElement('div');
+                box.className = 'month-box';
+                box.innerHTML = `<div>${month}</div><div class="count">${faliMonthlyCounts[idx]}</div>`;
+                reportGrid.appendChild(box);
+            });
+        }
+
+        // Set default date picker target value to current system day
+        document.getElementById('in-date').valueAsDate = new Date();
+        renderFarm();
+    </script>
+</body>
+</html>
